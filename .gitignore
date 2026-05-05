@@ -33,9 +33,13 @@ yarn-error.*
 # local env files
 .env*.local
 
+
 # typescript
 *.tsbuildinfo
 
 # generated native folders
 /ios
 /android
+
+# Firebase config (ne pas push les clés en clair)
+firebase.config.js

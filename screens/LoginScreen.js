@@ -1,27 +1,35 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
+import { auth } from '../firebase.config';
+import { traduireErreurAuth } from '../data/firebaseErrors';
 import Input from '../components/Input';
 import Button from '../components/Button';
 
 export default function LoginScreen({ navigation }) {
-  // États contrôlés pour les deux champs
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  // État pour stocker un message d'erreur global
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Fonction appelée au clic sur le bouton Connexion
-  // Pour l'instant elle ne fait que valider les champs (Firebase viendra à l'étape 5)
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError('');
+
     if (!email || !password) {
       setError('Tous les champs sont obligatoires.');
       return;
     }
-    // TODO étape 5 : appeler signInWithEmailAndPassword
-    console.log('Connexion :', email);
+
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email.trim(), password);
+    } catch (err) {
+      setError(traduireErreurAuth(err.code));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -57,7 +65,7 @@ export default function LoginScreen({ navigation }) {
             secureTextEntry
           />
 
-          <Button title="Se connecter" onPress={handleLogin} />
+          <Button title="Se connecter" onPress={handleLogin} loading={loading} />
 
           {/* Petit espace puis lien vers l'inscription */}
           <View style={styles.footer}>

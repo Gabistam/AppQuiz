@@ -1,13 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { onAuthStateChanged } from 'firebase/auth';
+
+import { auth } from '../firebase.config';
 import AuthStack from './AuthStack';
 import AppStack from './AppStack';
 
 export default function AppNavigator() {
-  // Pour l'instant on simule l'authentification avec un booléen statique.
-  // À l'étape 5, on remplacera ça par un vrai listener Firebase Auth.
-  const [isLogged, setIsLogged] = useState(true);
+  const [user, setUser] = useState(null);
+  const [initializing, setInitializing] = useState(true);
 
-  // Si l'utilisateur est connecté → AppStack (Tabs)
-  // Sinon → AuthStack (Login + Register)
-  return isLogged ? <AppStack /> : <AuthStack />;
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (initializing) setInitializing(false);
+    });
+    return unsubscribe;
+  }, []);
+
+  if (initializing) {
+    return (
+      <View style={styles.splash}>
+        <ActivityIndicator size="large" color="#1e40af" />
+      </View>
+    );
+  }
+
+  return user ? <AppStack /> : <AuthStack />;
 }
+
+const styles = StyleSheet.create({
+  splash: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+  },
+});

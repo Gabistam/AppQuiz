@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
+import { auth, db } from '../firebase.config';
+import { traduireErreurAuth } from '../data/firebaseErrors';
 import Input from '../components/Input';
 import Button from '../components/Button';
 
@@ -10,30 +14,39 @@ export default function RegisterScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Validation simple côté client avant l'appel Firebase (étape 5)
-  const handleRegister = () => {
+  const handleRegister = async () => {
     setError('');
 
     if (!pseudo || !email || !password) {
       setError('Tous les champs sont obligatoires.');
       return;
     }
-
-    // Vérification basique du mot de passe (Firebase exige ≥ 6 caractères)
     if (password.length < 6) {
       setError('Le mot de passe doit contenir au moins 6 caractères.');
       return;
     }
-
-    // Vérification simple du format email
     if (!email.includes('@')) {
       setError('Email invalide.');
       return;
     }
 
-    // TODO étape 5 : appeler createUserWithEmailAndPassword
-    console.log('Inscription :', pseudo, email);
+    setLoading(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      const uid = userCredential.user.uid;
+
+      await setDoc(doc(db, 'users', uid), {
+        pseudo: pseudo.trim(),
+        email: email.trim(),
+        createdAt: serverTimestamp(),
+      });
+    } catch (err) {
+      setError(traduireErreurAuth(err.code));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -72,7 +85,7 @@ export default function RegisterScreen({ navigation }) {
             secureTextEntry
           />
 
-          <Button title="Créer mon compte" onPress={handleRegister} />
+          <Button title="Créer mon compte" onPress={handleRegister} loading={loading} />
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Déjà un compte ?</Text>
